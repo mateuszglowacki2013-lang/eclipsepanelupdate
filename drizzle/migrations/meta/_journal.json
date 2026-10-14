@@ -8,6 +8,13 @@
       "when": 1791978606389,
       "tag": "0000_create_releases_and_admins",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791978621134,
+      "tag": "0001_storage_policies_releases",
+      "breakpoints": true
     }
   ]
 }
