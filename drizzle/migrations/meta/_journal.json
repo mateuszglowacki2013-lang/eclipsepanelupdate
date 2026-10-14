@@ -15,6 +15,13 @@
       "when": 1791978621134,
       "tag": "0001_storage_policies_releases",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791978688657,
+      "tag": "0002_has_admin_function",
+      "breakpoints": true
     }
   ]
 }
