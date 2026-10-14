@@ -24,8 +24,8 @@ type ReleaseRow = {
 };
 
 async function pickLatest(channel: string): Promise<ReleaseRow | null> {
-  const url = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL;
-  const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY;
+  const url = process.env['VITE_SUPABASE_URL'] ?? process.env['SUPABASE_URL'];
+  const key = process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] ?? process.env['SUPABASE_PUBLISHABLE_KEY'];
   const client = createClient(url!, key!, { auth: { persistSession: false } });
   const { data, error } = await client
     .from("releases")

@@ -2,7 +2,7 @@ export const SEMVER_RE = /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/;
 
 export function parseSemver(v: string): { nums: number[]; pre: string[] | null } | null {
   if (!SEMVER_RE.test(v)) return null;
-  const [core, pre] = v.split("-");
+  const [core = "", pre] = v.split("-");
   return {
     nums: core.split(".").map(Number),
     pre: pre ? pre.split(".") : null,
@@ -15,7 +15,7 @@ export function compareSemver(a: string, b: string): number {
   const pb = parseSemver(b);
   if (!pa || !pb) throw new Error("Invalid semver");
   for (let i = 0; i < 3; i++) {
-    if (pa.nums[i] !== pb.nums[i]) return pa.nums[i] - pb.nums[i];
+    if (pa.nums[i]! !== pb.nums[i]!) return pa.nums[i]! - pb.nums[i]!;
   }
   if (!pa.pre && !pb.pre) return 0;
   if (!pa.pre) return 1;
@@ -42,5 +42,5 @@ export function compareSemver(a: string, b: string): number {
 export function bumpPatch(v: string): string {
   const p = parseSemver(v);
   if (!p) return "1.0.0";
-  return `${p.nums[0]}.${p.nums[1]}.${p.nums[2] + 1}`;
+  return `${p.nums[0]}.${p.nums[1]}.${p.nums[2]! + 1}`;
 }

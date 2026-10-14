@@ -34,8 +34,8 @@ export function renderMarkdown(md: string): string {
     const h = t.match(/^(#{1,3})\s+(.*)$/);
     if (h) {
       closeList();
-      const level = h[1].length + 2;
-      out.push(`<h${level} class="font-display text-xl mt-4 mb-1">${inline(h[2])}</h${level}>`);
+      const level = h[1]!.length + 2;
+      out.push(`<h${level} class="font-display text-xl mt-4 mb-1">${inline(h[2]!)}</h${level}>`);
       continue;
     }
     const li = t.match(/^[-*]\s+(.*)$/);
@@ -44,7 +44,7 @@ export function renderMarkdown(md: string): string {
         out.push('<ul class="list-disc pl-5 space-y-1 my-2">');
         inList = true;
       }
-      out.push(`<li>${inline(li[1])}</li>`);
+      out.push(`<li>${inline(li[1]!)}</li>`);
       continue;
     }
     closeList();

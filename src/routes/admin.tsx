@@ -157,7 +157,7 @@ function AdminPanel() {
   }, []);
 
   const manifestUrl = `${window.location.origin}/api/public/latest`;
-  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+  const anonKey = import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] as string;
 
   async function togglePublish(r: Release) {
     await supabase
@@ -276,7 +276,7 @@ function NewReleaseCard({ releases, onSaved }: { releases: Release[]; onSaved: (
   useEffect(() => {
     const published = channelReleases.filter((r) => r.published);
     if (published.length) {
-      const top = [...published].sort((a, b) => compareSemver(b.version, a.version))[0];
+      const top = [...published].sort((a, b) => compareSemver(b.version, a.version))[0]!;
       setVersion(bumpPatch(top.version));
     } else {
       setVersion("1.0.0");
@@ -320,7 +320,7 @@ function NewReleaseCard({ releases, onSaved }: { releases: Release[]; onSaved: (
     return new Promise(async (resolve, reject) => {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
-      const base = import.meta.env.VITE_SUPABASE_URL as string;
+      const base = import.meta.env['VITE_SUPABASE_URL'] as string;
       const xhr = new XMLHttpRequest();
       xhrRef.current = xhr;
       let lastT = performance.now();
@@ -342,7 +342,7 @@ function NewReleaseCard({ releases, onSaved }: { releases: Release[]; onSaved: (
       )));
       xhr.onerror = () => reject(new Error("Błąd sieci podczas przesyłania."));
       xhr.open("POST", `${base}/storage/v1/object/releases/${path}`);
-      xhr.setRequestHeader("apikey", import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string);
+      xhr.setRequestHeader("apikey", import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] as string);
       if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
       xhr.setRequestHeader("Content-Type", "application/octet-stream");
       xhr.setRequestHeader("x-upsert", "true");
