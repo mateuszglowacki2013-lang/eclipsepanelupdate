@@ -326,7 +326,10 @@ function NewReleaseCard({ releases, onSaved }: { releases: Release[]; onSaved: (
       let lastT = performance.now();
       let lastLoaded = 0;
       xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) setProgress(e.loaded / e.total);
+        if (e.lengthComputable) {
+          setProgress(e.loaded / e.total);
+          if (e.loaded >= e.total) setStatus("Plik wysłany, serwer go zapisuje… (to może potrwać chwilę)");
+        }
         const now = performance.now();
         if (now - lastT > 500) {
           const mbps = ((e.loaded - lastLoaded) / 1024 / 1024) / ((now - lastT) / 1000);
@@ -341,6 +344,7 @@ function NewReleaseCard({ releases, onSaved }: { releases: Release[]; onSaved: (
           : `Błąd przesyłania (${xhr.status}). Spróbuj ponownie lub użyj opcji „Zewnętrzny link”.`
       )));
       xhr.onerror = () => reject(new Error("Błąd sieci podczas przesyłania."));
+      xhr.onabort = () => reject(new Error("Przesyłanie anulowane."));
       xhr.open("POST", `${base}/storage/v1/object/releases/${path}`);
       xhr.setRequestHeader("apikey", import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] as string);
       if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
@@ -390,7 +394,9 @@ function NewReleaseCard({ releases, onSaved }: { releases: Release[]; onSaved: (
       setProgress(null);
       onSaved();
     } catch (e) {
-      setStatus(e instanceof Error ? e.message : "Wystąpił błąd.");
+      setProgress(null);
+      setSpeed("");
+      setStatus("❌ " + (e instanceof Error ? e.message : "Wystąpił błąd."));
     }
   }
 
