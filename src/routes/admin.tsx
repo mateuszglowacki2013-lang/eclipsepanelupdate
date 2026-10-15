@@ -318,39 +318,44 @@ function NewReleaseCard({ releases, onSaved }: { releases: Release[]; onSaved: (
 
   function uploadFile(path: string): Promise<void> {
     return new Promise(async (resolve, reject) => {
+      const { Upload } = await import("tus-js-client");
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
       const base = import.meta.env['VITE_SUPABASE_URL'] as string;
-      const xhr = new XMLHttpRequest();
-      xhrRef.current = xhr;
       let lastT = performance.now();
       let lastLoaded = 0;
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) {
-          setProgress(e.loaded / e.total);
-          if (e.loaded >= e.total) setStatus("Plik wysłany, serwer go zapisuje… (to może potrwać chwilę)");
-        }
-        const now = performance.now();
-        if (now - lastT > 500) {
-          const mbps = ((e.loaded - lastLoaded) / 1024 / 1024) / ((now - lastT) / 1000);
-          setSpeed(mbps.toFixed(1) + " MB/s");
-          lastT = now;
-          lastLoaded = e.loaded;
-        }
-      };
-      xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(
-        xhr.status === 413
-          ? "Plik przekracza limit projektu. Użyj opcji „Zewnętrzny link”."
-          : `Błąd przesyłania (${xhr.status}). Spróbuj ponownie lub użyj opcji „Zewnętrzny link”.`
-      )));
-      xhr.onerror = () => reject(new Error("Błąd sieci podczas przesyłania."));
-      xhr.onabort = () => reject(new Error("Przesyłanie anulowane."));
-      xhr.open("POST", `${base}/storage/v1/object/releases/${path}`);
-      xhr.setRequestHeader("apikey", import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] as string);
-      if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
-      xhr.setRequestHeader("Content-Type", "application/octet-stream");
-      xhr.setRequestHeader("x-upsert", "true");
-      xhr.send(file);
+      const upload = new Upload(file!, {
+        endpoint: `${base}/storage/v1/upload/resumable`,
+        retryDelays: [0, 2000, 5000, 10000, 20000],
+        headers: {
+          authorization: `Bearer ${token}`,
+          apikey: import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] as string,
+          "x-upsert": "true",
+        },
+        uploadDataDuringCreation: true,
+        removeFingerprintOnSuccess: true,
+        chunkSize: 6 * 1024 * 1024,
+        metadata: {
+          bucketName: "releases",
+          objectName: path,
+          contentType: "application/octet-stream",
+          cacheControl: "3600",
+        },
+        onProgress: (loaded, total) => {
+          setProgress(loaded / total);
+          const now = performance.now();
+          if (now - lastT > 500) {
+            const mbps = ((loaded - lastLoaded) / 1024 / 1024) / ((now - lastT) / 1000);
+            setSpeed(mbps.toFixed(1) + " MB/s");
+            lastT = now;
+            lastLoaded = loaded;
+          }
+        },
+        onSuccess: () => resolve(),
+        onError: (err) => reject(new Error("Błąd przesyłania: " + (err?.message ?? "nieznany"))),
+      });
+      xhrRef.current = { abort: () => { upload.abort(); reject(new Error("Przesyłanie anulowane.")); } } as unknown as XMLHttpRequest;
+      upload.start();
     });
   }
 
