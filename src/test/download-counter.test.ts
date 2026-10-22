@@ -56,14 +56,14 @@ describe("Release download counting", () => {
   });
 
   it("does not count unavailable files", async () => {
-    state.rows[0].external_url = null;
+    state.rows = [{ id, version: "1.0.9", channel: "stable", published: true, external_url: null }];
     const response = await handler({ request: new Request("https://eclipsepanelupdate.lovable.app/api/public/latest?download=1") });
     expect(response.status).toBe(404);
     expect(state.rpc).not.toHaveBeenCalled();
   });
 
   it("does not count unpublished releases", async () => {
-    state.rows[0].published = false;
+    state.rows = [{ id, version: "1.0.9", channel: "stable", published: false, external_url: fileUrl }];
     const response = await handler({ request: new Request("https://eclipsepanelupdate.lovable.app/api/public/latest?download=1") });
     expect(await response.json()).toEqual({ version: null });
     expect(state.rpc).not.toHaveBeenCalled();
