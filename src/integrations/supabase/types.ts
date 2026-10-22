@@ -85,6 +85,10 @@ export type Database = {
       claim_admin: { Args: never; Returns: undefined }
       has_admin: { Args: never; Returns: boolean }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      record_release_download: {
+        Args: { release_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

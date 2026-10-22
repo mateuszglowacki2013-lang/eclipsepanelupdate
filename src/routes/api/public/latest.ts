@@ -23,15 +23,35 @@ type ReleaseRow = {
   downloads: number;
 };
 
-async function pickLatest(channel: string): Promise<ReleaseRow | null> {
-  const url = process.env['VITE_SUPABASE_URL'] ?? process.env['SUPABASE_URL'];
-  const key = process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] ?? process.env['SUPABASE_PUBLISHABLE_KEY'];
-  const client = createClient(url!, key!, { auth: { persistSession: false } });
-  const { data, error } = await client
+function publicClient() {
+  const url = process.env['SUPABASE_URL'] ?? process.env['VITE_SUPABASE_URL'];
+  const key = process.env['SUPABASE_PUBLISHABLE_KEY'] ?? process.env['VITE_SUPABASE_PUBLISHABLE_KEY'];
+  if (!url || !key) throw new Error("Missing storage configuration");
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      fetch: (input, init) => {
+        const headers = new Headers(input instanceof Request ? input.headers : undefined);
+        new Headers(init?.headers).forEach((value, name) => headers.set(name, value));
+        if (key.startsWith('sb_') && headers.get('Authorization') === `Bearer ${key}`) {
+          headers.delete('Authorization');
+        }
+        headers.set('apikey', key);
+        return fetch(input, { ...init, headers });
+      },
+    },
+  });
+}
+
+async function pickLatest(channel: string, releaseId: string | null): Promise<ReleaseRow | null> {
+  const client = publicClient();
+  let query = client
     .from("releases")
     .select("id,version,channel,notes,file_path,external_url,size,sha256,mandatory,published_at,downloads")
     .eq("channel", channel)
     .eq("published", true);
+  if (releaseId) query = query.eq("id", releaseId);
+  const { data, error } = await query;
   if (error) throw error;
   const rows = (data ?? []) as ReleaseRow[];
   rows.sort((a, b) => compareSemver(b.version, a.version));
@@ -46,16 +66,37 @@ export const Route = createFileRoute("/api/public/latest")({
         const u = new URL(request.url);
         const channel = u.searchParams.get("channel") === "beta" ? "beta" : "stable";
         const wantDownload = u.searchParams.get("download") === "1";
+        const releaseId = u.searchParams.get("id");
+        if (releaseId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(releaseId)) {
+          return Response.json({ error: "invalid release" }, { status: 400, headers: CORS });
+        }
 
         let release: ReleaseRow | null;
         try {
-          release = await pickLatest(channel);
+          release = await pickLatest(channel, releaseId);
         } catch {
           return Response.json({ error: "server error" }, { status: 500, headers: CORS });
         }
 
         if (!release) {
           return Response.json({ version: null }, { status: 200, headers: CORS });
+        }
+
+        if (!wantDownload) {
+          return Response.json(
+            {
+              version: release.version,
+              notes: release.notes ?? "",
+              url: release.external_url || release.file_path
+                ? `${u.origin}/api/public/latest?channel=${channel}&download=1&id=${release.id}`
+                : null,
+              sha256: release.sha256,
+              size: release.size,
+              mandatory: release.mandatory,
+              publishedAt: release.published_at,
+            },
+            { status: 200, headers: CORS },
+          );
         }
 
         let fileUrl = release.external_url;
@@ -70,30 +111,17 @@ export const Route = createFileRoute("/api/public/latest")({
           fileUrl = data.signedUrl;
         }
 
-        if (wantDownload) {
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          await supabaseAdmin
-            .from("releases")
-            .update({ downloads: (release.downloads ?? 0) + 1 })
-            .eq("id", release.id);
-          return new Response(null, {
-            status: 302,
-            headers: { ...CORS, Location: fileUrl! },
-          });
+        if (!fileUrl) {
+          return Response.json({ error: "file unavailable" }, { status: 404, headers: CORS });
         }
-
-        return Response.json(
-          {
-            version: release.version,
-            notes: release.notes ?? "",
-            url: fileUrl,
-            sha256: release.sha256,
-            size: release.size,
-            mandatory: release.mandatory,
-            publishedAt: release.published_at,
-          },
-          { status: 200, headers: CORS },
-        );
+        // Only this narrowly granted function may update a public download counter.
+        // It increments in SQL, so simultaneous downloads do not overwrite each other.
+        const { error } = await publicClient().rpc("record_release_download", { release_id: release.id });
+        if (error) console.error("Download counter update failed:", error.code);
+        return new Response(null, {
+          status: 302,
+          headers: { ...CORS, Location: fileUrl },
+        });
       },
     },
   },
