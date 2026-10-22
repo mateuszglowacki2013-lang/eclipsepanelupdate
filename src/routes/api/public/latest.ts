@@ -58,6 +58,21 @@ export const Route = createFileRoute("/api/public/latest")({
           return Response.json({ version: null }, { status: 200, headers: CORS });
         }
 
+        if (!wantDownload) {
+          return Response.json(
+            {
+              version: release.version,
+              notes: release.notes ?? "",
+              url: `${u.origin}/api/public/latest?channel=${channel}&download=1`,
+              sha256: release.sha256,
+              size: release.size,
+              mandatory: release.mandatory,
+              publishedAt: release.published_at,
+            },
+            { status: 200, headers: CORS },
+          );
+        }
+
         let fileUrl = release.external_url;
         if (!fileUrl && release.file_path) {
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
