@@ -46,15 +46,40 @@ async function handle(request: Request, name: string) {
   const body = async () => { try { return await request.json(); } catch { return {}; } };
 
   // ---------- public (no login) ----------
+  if (name === "eclipse-auth-start" && m === "POST") {
+    const ip = request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    await db.from("auth_challenges").delete().lt("created_at", new Date(Date.now() - 600000).toISOString());
+    const { count } = await db.from("auth_challenges").select("server_id", { count: "exact", head: true }).eq("ip", ip).gte("created_at", new Date(Date.now() - 3600000).toISOString());
+    if ((count ?? 0) >= 30) return err("Too many sign-in attempts", 429);
+    const bytes = crypto.getRandomValues(new Uint8Array(20));
+    const serverId = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    await db.from("auth_challenges").insert({ server_id: serverId, ip });
+    return json({ serverId });
+  }
   if (name === "eclipse-auth" && m === "POST") {
-    const { mcAccessToken } = await body();
-    if (typeof mcAccessToken !== "string" || !mcAccessToken) return err("mcAccessToken required", 400);
-    const r = await fetch("https://api.minecraftservices.com/minecraft/profile", { headers: { Authorization: `Bearer ${mcAccessToken}` } });
-    if (r.status !== 200) return err("Invalid Minecraft token", 401);
-    const prof = await r.json();
-    const uuid = String(prof.id).replace(/-/g, "").toLowerCase();
-    await db.from("players").upsert({ uuid, name: prof.name, last_seen: new Date().toISOString() });
-    return json({ token: await signJwt(uuid), uuid, name: prof.name });
+    const b = await body();
+    const H = { "User-Agent": "EclipseLauncher/1.0", Accept: "application/json" };
+    let uuid: string, pname: string;
+    if (typeof b.serverId === "string" && typeof b.name === "string") {
+      if (!/^[0-9a-f]{40}$/.test(b.serverId) || !/^[A-Za-z0-9_]{1,16}$/.test(b.name)) return err("Sign-in expired, try again", 401);
+      const { data: ch } = await db.from("auth_challenges").delete().eq("server_id", b.serverId).select().maybeSingle();
+      if (!ch || Date.now() - new Date(ch.created_at).getTime() > 600000) return err("Sign-in expired, try again", 401);
+      const r = await fetch(`https://sessionserver.mojang.com/session/minecraft/hasJoined?username=${encodeURIComponent(b.name)}&serverId=${b.serverId}`, { headers: H });
+      if (r.status !== 200) return err("Minecraft did not confirm this account", 401);
+      const prof = await r.json().catch(() => null);
+      if (!prof?.id) return err("Minecraft did not confirm this account", 401);
+      uuid = String(prof.id).replace(/-/g, "").toLowerCase(); pname = prof.name;
+    } else {
+      const { mcAccessToken } = b;
+      if (typeof mcAccessToken !== "string" || !mcAccessToken) return err("name and serverId required", 400);
+      const r = await fetch("https://api.minecraftservices.com/minecraft/profile", { headers: { ...H, Authorization: `Bearer ${mcAccessToken}` } });
+      if (r.status === 401) return err("Invalid Minecraft token", 401);
+      if (r.status !== 200) return err(`Mojang is not reachable right now (status ${r.status})`, 502);
+      const prof = await r.json();
+      uuid = String(prof.id).replace(/-/g, "").toLowerCase(); pname = prof.name;
+    }
+    await db.from("players").upsert({ uuid, name: pname, last_seen: new Date().toISOString() });
+    return json({ token: await signJwt(uuid), uuid, name: pname });
   }
   if (name === "training-upload" && m === "POST") {
     const raw = await request.text();
