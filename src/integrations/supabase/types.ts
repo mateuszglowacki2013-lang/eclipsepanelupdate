@@ -26,6 +26,24 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_challenges: {
+        Row: {
+          created_at: string
+          ip: string | null
+          server_id: string
+        }
+        Insert: {
+          created_at?: string
+          ip?: string | null
+          server_id: string
+        }
+        Update: {
+          created_at?: string
+          ip?: string | null
+          server_id?: string
+        }
+        Relationships: []
+      }
       friendships: {
         Row: {
           a: string

@@ -20,7 +20,7 @@ function Privacy() {
       <h1 className="font-display text-4xl">Prywatność</h1>
       <h2 className="mt-8 text-xl font-medium">Znajomi</h2>
       <p className="mt-2 text-sm text-muted-foreground">
-        Przechowujemy Twój nick i UUID Minecraft, listę znajomych, publiczny klucz czatu, wiadomości (szyfrowane end-to-end — nie możemy ich odczytać; usuwane po 90 dniach) oraz to, czy jesteś online. Twój serwer widzą znajomi tylko, jeśli na to pozwolisz.
+        Przechowujemy Twój nick i UUID Minecraft, listę znajomych, publiczny klucz czatu, wiadomości (szyfrowane end-to-end — nie możemy ich odczytać; usuwane po 90 dniach) oraz to, czy jesteś online. Twój serwer widzą znajomi tylko, jeśli na to pozwolisz. Aby Cię zalogować, prosimy serwer sesji Mojang o potwierdzenie konta — Twój token logowania Minecraft nigdy nie trafia na nasz serwer.
       </p>
       <h2 className="mt-8 text-xl font-medium">Trening botów</h2>
       <p className="mt-2 text-sm text-muted-foreground">

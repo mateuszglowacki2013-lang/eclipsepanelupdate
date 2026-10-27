@@ -36,6 +36,13 @@
       "when": 1793117403088,
       "tag": "0004_friends_training",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793132416430,
+      "tag": "0005_auth_challenges",
+      "breakpoints": true
     }
   ]
 }
