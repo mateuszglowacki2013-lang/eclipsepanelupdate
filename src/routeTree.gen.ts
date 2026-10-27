@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ApiPublicLatestRouteImport } from './routes/api/public/latest'
+import { Route as ApiPublicEclipseSplatRouteImport } from './routes/api/public/eclipse/$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +29,45 @@ const ApiPublicLatestRoute = ApiPublicLatestRouteImport.update({
   path: '/api/public/latest',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicEclipseSplatRoute = ApiPublicEclipseSplatRouteImport.update({
+  id: '/api/public/eclipse/$',
+  path: '/api/public/eclipse/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/api/public/latest': typeof ApiPublicLatestRoute
+  '/api/public/eclipse/$': typeof ApiPublicEclipseSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/api/public/latest': typeof ApiPublicLatestRoute
+  '/api/public/eclipse/$': typeof ApiPublicEclipseSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/api/public/latest': typeof ApiPublicLatestRoute
+  '/api/public/eclipse/$': typeof ApiPublicEclipseSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/api/public/latest'
+  fullPaths: '/' | '/admin' | '/api/public/latest' | '/api/public/eclipse/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/api/public/latest'
-  id: '__root__' | '/' | '/admin' | '/api/public/latest'
+  to: '/' | '/admin' | '/api/public/latest' | '/api/public/eclipse/$'
+  id:
+    '__root__' | '/' | '/admin' | '/api/public/latest' | '/api/public/eclipse/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   ApiPublicLatestRoute: typeof ApiPublicLatestRoute
+  ApiPublicEclipseSplatRoute: typeof ApiPublicEclipseSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +93,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicLatestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/eclipse/$': {
+      id: '/api/public/eclipse/$'
+      path: '/api/public/eclipse/$'
+      fullPath: '/api/public/eclipse/$'
+      preLoaderRoute: typeof ApiPublicEclipseSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +107,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   ApiPublicLatestRoute: ApiPublicLatestRoute,
+  ApiPublicEclipseSplatRoute: ApiPublicEclipseSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
