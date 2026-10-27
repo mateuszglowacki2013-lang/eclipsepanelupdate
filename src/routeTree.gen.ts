@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ApiPublicLatestRouteImport } from './routes/api/public/latest'
+import { Route as ApiPublicEclipseSplatRouteImport } from './routes/api/public/eclipse/$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -23,40 +25,66 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicLatestRoute = ApiPublicLatestRouteImport.update({
   id: '/api/public/latest',
   path: '/api/public/latest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicEclipseSplatRoute = ApiPublicEclipseSplatRouteImport.update({
+  id: '/api/public/eclipse/$',
+  path: '/api/public/eclipse/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/privacy': typeof PrivacyRoute
   '/api/public/latest': typeof ApiPublicLatestRoute
+  '/api/public/eclipse/$': typeof ApiPublicEclipseSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/privacy': typeof PrivacyRoute
   '/api/public/latest': typeof ApiPublicLatestRoute
+  '/api/public/eclipse/$': typeof ApiPublicEclipseSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/privacy': typeof PrivacyRoute
   '/api/public/latest': typeof ApiPublicLatestRoute
+  '/api/public/eclipse/$': typeof ApiPublicEclipseSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/api/public/latest'
+  fullPaths:
+    '/' | '/admin' | '/privacy' | '/api/public/latest' | '/api/public/eclipse/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/api/public/latest'
-  id: '__root__' | '/' | '/admin' | '/api/public/latest'
+  to:
+    '/' | '/admin' | '/privacy' | '/api/public/latest' | '/api/public/eclipse/$'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/privacy'
+    | '/api/public/latest'
+    | '/api/public/eclipse/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  PrivacyRoute: typeof PrivacyRoute
   ApiPublicLatestRoute: typeof ApiPublicLatestRoute
+  ApiPublicEclipseSplatRoute: typeof ApiPublicEclipseSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -75,11 +103,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/latest': {
       id: '/api/public/latest'
       path: '/api/public/latest'
       fullPath: '/api/public/latest'
       preLoaderRoute: typeof ApiPublicLatestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/eclipse/$': {
+      id: '/api/public/eclipse/$'
+      path: '/api/public/eclipse/$'
+      fullPath: '/api/public/eclipse/$'
+      preLoaderRoute: typeof ApiPublicEclipseSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -88,7 +130,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  PrivacyRoute: PrivacyRoute,
   ApiPublicLatestRoute: ApiPublicLatestRoute,
+  ApiPublicEclipseSplatRoute: ApiPublicEclipseSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

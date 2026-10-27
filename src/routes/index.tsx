@@ -124,6 +124,30 @@ function Index() {
             </div>
           </section>
         )}
+        <section className="mt-14">
+          <h2 className="font-display text-3xl">Co nowego</h2>
+          <ul className="mt-6 space-y-3">
+            {[
+              ["Znajomi", false, "Dodawaj znajomych po nicku Minecraft, zobacz kto jest online i na jakim serwerze, czat szyfrowany end-to-end, dołącz do znajomego jednym kliknięciem (w launcherze i w menu gry)."],
+              ["AI Bot", true, "Powiedz mu zwykłymi słowami (po polsku lub angielsku), co ma zrobić, np. „wykop 10 diamentów i posortuj skrzynie”. Planuje kroki i wykonuje je do końca. Działa na małym modelu AI na Twoim PC (dobranym do RAM i karty graficznej, pobieranym raz), nigdy w chmurze; uczy się komend, które zadziałały."],
+              ["Mining Bot", true, "Kopie tunele i wydobywa widoczne rudy, dobiera właściwy kilof, omija lawę i wodę albo kopie wskazany blok."],
+              ["Sort Bot", true, "Oznacz skrzynie (drewno, kamień, rudy, rośliny…), a bot obejdzie bazę i wszystko posortuje; otwiera drzwi, wchodzi po drabinach i schodach."],
+              ["Boty, które się uczą", true, "Z włączonym „Pomóż botom się uczyć” anonimowe dane o ruchach graczy co noc sprawiają, że każdy bot chodzi lepiej."],
+              ["ESP", true, "Tylko w trybie jednoosobowym. Ramki wokół graczy, potworów i zwierząt przez ściany."],
+              ["104 nowe widżety HUD i alerty", false, "Animowane paski, odczyty i 32 alerty."],
+            ].map(([t, beta, d]) => (
+              <li key={t as string} className="rounded-xl border border-border bg-surface-2 p-4">
+                <div className="flex items-center gap-2 font-medium">
+                  {t}
+                  {beta && <span className="rounded-full border border-accent px-2 py-0.5 text-[10px] uppercase tracking-wider text-accent">Beta</span>}
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">{d}</p>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-4 text-xs text-muted-foreground">Funkcje beta włączysz w launcherze (Ustawienia → Funkcje beta). Boty mogą skutkować banem na serwerach; używaj ich tam, gdzie są dozwolone.</p>
+          <a href="/privacy" className="mt-2 inline-block text-xs text-accent underline">Prywatność</a>
+        </section>
       </main>
     </div>
   );
