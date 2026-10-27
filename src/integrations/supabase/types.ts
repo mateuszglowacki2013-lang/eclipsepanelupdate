@@ -26,6 +26,156 @@ export type Database = {
         }
         Relationships: []
       }
+      friendships: {
+        Row: {
+          a: string
+          b: string
+          created_at: string
+          requested_by: string
+          status: string
+        }
+        Insert: {
+          a: string
+          b: string
+          created_at?: string
+          requested_by: string
+          status: string
+        }
+        Update: {
+          a?: string
+          b?: string
+          created_at?: string
+          requested_by?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          created_at: string
+          id: number
+          read_at: string | null
+          recipient: string
+          sender: string
+          text: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          read_at?: string | null
+          recipient: string
+          sender: string
+          text: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          read_at?: string | null
+          recipient?: string
+          sender?: string
+          text?: string
+        }
+        Relationships: []
+      }
+      movement_model: {
+        Row: {
+          count: number
+          move: string
+          pattern: string
+          players: number
+          updated_at: string
+        }
+        Insert: {
+          count: number
+          move: string
+          pattern: string
+          players: number
+          updated_at?: string
+        }
+        Update: {
+          count?: number
+          move?: string
+          pattern?: string
+          players?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      movement_model_meta: {
+        Row: {
+          contributors: number
+          generated_at: string | null
+          id: number
+          total_samples: number
+          version: number
+        }
+        Insert: {
+          contributors?: number
+          generated_at?: string | null
+          id?: number
+          total_samples?: number
+          version?: number
+        }
+        Update: {
+          contributors?: number
+          generated_at?: string | null
+          id?: number
+          total_samples?: number
+          version?: number
+        }
+        Relationships: []
+      }
+      players: {
+        Row: {
+          created_at: string
+          last_seen: string
+          name: string
+          public_key: string | null
+          share_server: boolean
+          uuid: string
+        }
+        Insert: {
+          created_at?: string
+          last_seen?: string
+          name: string
+          public_key?: string | null
+          share_server?: boolean
+          uuid: string
+        }
+        Update: {
+          created_at?: string
+          last_seen?: string
+          name?: string
+          public_key?: string | null
+          share_server?: boolean
+          uuid?: string
+        }
+        Relationships: []
+      }
+      presence: {
+        Row: {
+          mc_version: string | null
+          server_address: string | null
+          status: string
+          updated_at: string
+          uuid: string
+        }
+        Insert: {
+          mc_version?: string | null
+          server_address?: string | null
+          status: string
+          updated_at?: string
+          uuid: string
+        }
+        Update: {
+          mc_version?: string | null
+          server_address?: string | null
+          status?: string
+          updated_at?: string
+          uuid?: string
+        }
+        Relationships: []
+      }
       releases: {
         Row: {
           channel: string
@@ -77,6 +227,30 @@ export type Database = {
         }
         Relationships: []
       }
+      training_uploads: {
+        Row: {
+          id: number
+          install_id: string
+          mc_version: string | null
+          received_at: string
+          samples: Json
+        }
+        Insert: {
+          id?: number
+          install_id: string
+          mc_version?: string | null
+          received_at?: string
+          samples: Json
+        }
+        Update: {
+          id?: number
+          install_id?: string
+          mc_version?: string | null
+          received_at?: string
+          samples?: Json
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -85,6 +259,7 @@ export type Database = {
       claim_admin: { Args: never; Returns: undefined }
       has_admin: { Args: never; Returns: boolean }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      rebuild_movement_model: { Args: never; Returns: undefined }
       record_release_download: {
         Args: { release_id: string }
         Returns: undefined

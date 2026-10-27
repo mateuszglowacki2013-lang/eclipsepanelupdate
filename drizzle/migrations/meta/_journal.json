@@ -29,6 +29,13 @@
       "when": 1792691638716,
       "tag": "0003_atomic_release_download_counter",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793117403088,
+      "tag": "0004_friends_training",
+      "breakpoints": true
     }
   ]
 }
