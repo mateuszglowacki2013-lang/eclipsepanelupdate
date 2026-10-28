@@ -71,6 +71,72 @@ async function verifyCertificate(uuid: string, serverId: string, cert: any, sign
   }
 }
 
+
+// ---------- the AI bot's shared knowledge: commands that worked for players, rebuilt once a day ----------
+// Only goal steps that are safe to hand to every bot: never slash commands, chat or dropping items,
+// and nothing tied to one world's coordinates.
+const SHARED_ACTIONS = ["MINE", "CRAFT", "SMELT", "GET_FOOD", "EAT", "ATTACK", "FARM", "ENCHANT", "TRADE", "NETHER", "SORT", "WAIT"];
+const KNOW = "eclipse-knowledge";
+const normCmd = (t: string) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ł/g, "l")
+  .replace(/[^a-z0-9 -]/g, " ").replace(/\s+/g, " ").trim().slice(0, 200);
+function cleanSteps(steps: any): any[] | null {
+  if (!Array.isArray(steps) || steps.length < 1 || steps.length > 20) return null;
+  const out: any[] = [];
+  for (const s of steps) {
+    if (!s || !SHARED_ACTIONS.includes(s.action)) return null;
+    const step: any = { action: s.action };
+    if (s.what !== undefined) {
+      if (typeof s.what !== "string" || !/^[a-z0-9_#: ]{0,40}$/.test(s.what)) return null;
+      step.what = s.what;
+    }
+    if (s.amount !== undefined) {
+      if (!Number.isInteger(s.amount) || s.amount < 0 || s.amount > 64) return null;
+      step.amount = s.amount;
+    }
+    out.push(step);
+  }
+  return out;
+}
+async function readJson(db: any, path: string): Promise<any> {
+  const { data } = await db.storage.from("releases").download(path);
+  if (!data) return null;
+  try { return JSON.parse(await data.text()); } catch { return null; }
+}
+async function buildKnowledge(db: any) {
+  const plans = new Map<string, { command: string; steps: any[]; installs: Set<string> }>();
+  const { data: days } = await db.storage.from("releases").list(`${KNOW}/uploads`, { limit: 60, sortBy: { column: "name", order: "desc" } });
+  let contributors = new Set<string>();
+  for (const d of (days ?? []).slice(0, 30)) {
+    const { data: files } = await db.storage.from("releases").list(`${KNOW}/uploads/${d.name}`, { limit: 1000 });
+    for (const f of files ?? []) {
+      const up = await readJson(db, `${KNOW}/uploads/${d.name}/${f.name}`);
+      if (!up || !Array.isArray(up.plans)) continue;
+      const install = f.name.replace(/\.json$/, "");
+      contributors.add(install);
+      for (const pl of up.plans) {
+        const key = normCmd(pl.command) + "\n" + JSON.stringify(pl.steps);
+        const e = plans.get(key) ?? { command: pl.command, steps: pl.steps, installs: new Set<string>() };
+        e.installs.add(install);
+        plans.set(key, e);
+      }
+    }
+  }
+  // while Eclipse is young one player is enough, later a plan needs two different players
+  const min = contributors.size >= 20 ? 2 : 1;
+  const best = new Map<string, any>();
+  for (const e of plans.values()) {
+    if (e.installs.size < min) continue;
+    const c = normCmd(e.command);
+    const prev = best.get(c);
+    if (!prev || e.installs.size > prev.players) best.set(c, { command: e.command, steps: e.steps, players: e.installs.size });
+  }
+  const list = [...best.values()].sort((a, b) => b.players - a.players).slice(0, 3000);
+  const old = await readJson(db, `${KNOW}/pack.json`);
+  const pack = { version: (old?.version ?? 0) + 1, day: new Date().toISOString().slice(0, 10), generatedAt: new Date().toISOString(), contributors: contributors.size, plans: list };
+  await db.storage.from("releases").upload(`${KNOW}/pack.json`, new Blob([JSON.stringify(pack)], { type: "application/json" }), { upsert: true, contentType: "application/json" });
+  return pack;
+}
+
 async function handle(request: Request, name: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const db = supabaseAdmin as any;
@@ -138,6 +204,32 @@ async function handle(request: Request, name: string) {
     const samples = b.samples.map((s: any) => ({ pattern: s.pattern, move: s.move, count: s.count }));
     await db.from("training_uploads").insert({ install_id: id, mc_version: String(b.mcVersion ?? "").slice(0, 20) || null, samples });
     return json({ ok: true });
+  }
+  if (name === "knowledge-upload" && m === "POST") {
+    const raw = await request.text();
+    if (raw.length > 100 * 1024) return err("Upload too large", 413);
+    let b: any; try { b = JSON.parse(raw); } catch { return err("Invalid JSON", 400); }
+    const id = b?.installId;
+    if (typeof id !== "string" || !/^[A-Za-z0-9-]{8,64}$/.test(id)) return err("Invalid installId", 400);
+    if (!Array.isArray(b.plans) || b.plans.length > 100) return err("Invalid plans", 400);
+    const plans: any[] = [];
+    for (const pl of b.plans) {
+      if (typeof pl?.command !== "string" || pl.command.length < 2 || pl.command.length > 300) continue;
+      const steps = cleanSteps(pl.steps);
+      if (steps) plans.push({ command: pl.command.slice(0, 300), steps });
+    }
+    const day = new Date().toISOString().slice(0, 10);
+    const path = `${KNOW}/uploads/${day}/${id}.json`;
+    const prev = await readJson(db, path);
+    const merged = [...(Array.isArray(prev?.plans) ? prev.plans : []), ...plans].slice(-200);
+    await db.storage.from("releases").upload(path, new Blob([JSON.stringify({ plans: merged })], { type: "application/json" }), { upsert: true, contentType: "application/json" });
+    return json({ ok: true, accepted: plans.length });
+  }
+  if (name === "knowledge" && m === "GET") {
+    const today = new Date().toISOString().slice(0, 10);
+    let pack = await readJson(db, `${KNOW}/pack.json`);
+    if (!pack || pack.day !== today) pack = await buildKnowledge(db); // the first visit of a new day rebuilds it
+    return json(pack, 200, { "Cache-Control": "public, max-age=3600" });
   }
   if (name === "training-model" && m === "GET") {
     const { data: meta } = await db.from("movement_model_meta").select("*").eq("id", 1).maybeSingle();
