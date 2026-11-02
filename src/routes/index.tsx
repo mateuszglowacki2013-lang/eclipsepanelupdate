@@ -94,7 +94,7 @@ function Index() {
                 <span>{latest.size ? (latest.size / 1024 / 1024).toFixed(1) + " MB" : ""}</span>
                 <span>{latest.published_at ? new Date(latest.published_at).toLocaleDateString("pl-PL") : ""}</span>
                 <span>
-                  <CountUp value={total} /> pobrań
+                  <CountUp value={latest.downloads ?? 0} /> pobrań tej wersji · <CountUp value={total} /> łącznie
                 </span>
               </div>
             </>
